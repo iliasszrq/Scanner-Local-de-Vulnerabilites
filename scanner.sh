@@ -17,7 +17,7 @@ HISTORY_DIR="$SCRIPTS_DIR/history"
 LIB_DIR="$SCRIPT_DIR/lib"
 
 #fichier de scan actuel avec timestamp pour l'historique
-TIMESTAMP=$(date + %Y%m%d_%H%M%S")
+TIMESTAMP=$(date + "%Y%m%d_%H%M%S")
 SCAN_FILE="$HISTORY_DIR/scan_$TIMESTAMP.json"
 REPORT_FILE="$REPORTS_DIR/report_$TIMESTAMP.html"
 
