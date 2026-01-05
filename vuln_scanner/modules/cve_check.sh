@@ -44,13 +44,13 @@ declare -A KNOWN_VULNS=(
 
 #fct pour obtenir la version d'un package(multi distro)
 get_package_version(){
-    local package=$"$1"
+    local package="$1"
     local version=""
 
     #Essayer dpkg (Debian/ubuntu)
     if command -v dpkg &>/dev/null;then
         version=$(dpkg -l "$package" 2>/dev/null | awk '/^ii/ {print $3}' | head -1)
-        if [[-n "$version"]];then
+        if [[ -n "$version" ]];then
             echo "$version"
             return 0
         fi
@@ -59,7 +59,7 @@ get_package_version(){
     #essayer rpm; RHEL/CENTOS/FEDORA
     if command -v rpm &>/dev/null;then
         version=$(rpm -q "$package" 2>/dev/null | sed "s/${package}-//" | head -1)
-        if [[ -n "$version" && "$version" != *"not installed"*]];then
+        if [[ -n "$version" && "$version" != *"not installed"* ]];then
             echo "$version"
             return 0
         fi
@@ -68,7 +68,7 @@ get_package_version(){
     #essayer la commande --version
     if command -v "$package" &>/dev/null;then
         version=$("$package" --version 2>/dev/null | head -1 | grep -oE '[0-9]+\.[0-9]+\.?[0-9]*' | head -1)
-        if [[ -n "$version"]];then
+        if [[ -n "$version" ]];then
             echo "$version"
             return 0
         fi
@@ -80,8 +80,8 @@ version_lte(){
     local v1="$1"
     local v2="$2"
 
-    ["$v1" = "$v2"] && return 0
-    ["$(printf '%s\n' "$v1" "$v2" | sort -V | head -n1)" = "$v1"]
+    [[ "$v1" = "$v2" ]] && return 0
+    [[ "$(printf '%s\n' "$v1" "$v2" | sort -V | head -n1)" = "$v1" ]]
 }
 #fct pour verifier les vulnerabilite pour un package
 check_package_vulns(){
@@ -91,14 +91,14 @@ check_package_vulns(){
         local vuln_package=$(echo "$key" | cut -d: -f1)
         local vuln_version=$(echo "$key" | cut -d: -f2)
 
-        if [[ "$vuln_package" == "$package"]];then
-            local vuln_info = "${KNOWN_VULNS[$key]}"
+        if [[ "$vuln_package" == "$package" ]];then
+            local vuln_info="${KNOWN_VULNS[$key]}"
             local cve=$(echo "$vuln_info" | cut -d: -f1)
             local description=$(echo "$vuln_info" | cut -d: -f2)
             local severity=$(echo "$vuln_info" | cut -d: -f3)
 
             #verifier si la version installee est potensiellement vulnerable
-            if[["$installed_version" == "$vuln_version"*]] || version_lte "$installed_version" "$vuln_version";then
+            if [[ "$installed_version" == "$vuln_version"* ]] || version_lte "$installed_version" "$vuln_version";then
                 log_message "$severity" "Vulnerabilite potentielle detectee :"
                 log_message "INFO" " ->Paquet: $package"
                 log_message "INFO" " ->Version installee: $installed_version"
@@ -135,7 +135,7 @@ scan_critical_packages(){
     echo ""
     for package in "${critical_packages[@]}";do
         local version=$(get_package_version "$package")
-        if [[ -n "$version"]];then
+        if [[ -n "$version" ]];then
             log_message "INFO" "Trouve: $package version $version"
             check_package_vulns "$package" "$version"
         fi
@@ -165,7 +165,7 @@ check_kernel_version(){
         local now=$(date +%s)
         local age_days=$(( (now - kernel_date) / 86400))
 
-        if [[$age_days -gt 365 ]];then
+        if [[ $age_days -gt 365 ]];then
             log_message "MEDIUM" "Kernel non mis a jour depuis $age_days jours"
         fi
     fi
@@ -214,9 +214,9 @@ generate_version_inventory(){
         cat /etc/os-release 2>/dev/null | head -5
         echo ""
         echo "   Paquets critiques   "
-        for pkg in openssl openssh sudo bash apache2 nginx php mysql postgresql;
+        for pkg in openssl openssh sudo bash apache2 nginx php mysql postgresql;do
             local ver=$(get_package_version "$pkg")
-            [[-n "$ver"]] && echo "$pkg: $ver"
+            [[ -n "$ver" ]] && echo "$pkg: $ver"
         done
     } > "$inventory_file" 2>/dev/null
     log_message "INFO" "Inventaire sauvegarde : $inventory_file"

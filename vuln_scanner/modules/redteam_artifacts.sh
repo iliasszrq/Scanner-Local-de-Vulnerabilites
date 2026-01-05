@@ -34,11 +34,11 @@ detect_reverse_shells(){
         "/etc/cron.d"
         "/var/spool/cron"
     )
-    for path in "{$search_paths[@]}";do
-        [[ ! -d "$path"]] && continue
+    for path in "${search_paths[@]}";do
+        [[ ! -d "$path" ]] && continue
         for pattern in "${shell_patterns[@]}";do
             local found=$(grep -rl "$pattern" "$path" 2>/dev/null | head -5)
-            if [[ -n "$found"]];then
+            if [[ -n "$found" ]];then
                 while IFS=read -r file;do
                     log_message "CRITICAL" "Pettern de reverse shell trouve: $pattern"
                     log_message "INFO" " ->Fichier : $file"
@@ -50,14 +50,14 @@ detect_reverse_shells(){
     #verifier les connexions reseau suspectes
     if command -v netstat &>/dev/null;then
         local suspicious_conn=$(netstat -an 2>/dev/null | grep -E "ESTABLISHED.*:(4444|5555|1234|31337|6666|9001|9002)")
-        if [[-n "$suspicious_conn"]];then
+        if [[ -n "$suspicious_conn" ]];then
             log_message "HIGH" "Connexions sur ports suspects : "
             log_message "INFO" "$suspicious_conn"
         fi
     fi
-    if command -v ss &/dev/null;then
+    if command -v ss &>/dev/null;then
         local suspicious_conn=$(ss -an 2>/dev/null | grep -E "ESTAB.*:(4444|5555|1234|31337|6666|9001|9002)")
-        if [[ -n "$suspicious_conn"]];then
+        if [[ -n "$suspicious_conn" ]];then
             log_message "HIGH" "Connexions sur ports suspects :"
             log_message "INFO" "$suspicious_conn"
         fi
@@ -68,13 +68,13 @@ detect_unknown_ssh_keys(){
     log_message "INFO" "Analyse des cles SSH authorized_keys..."
     local auth_keys_files=$(find /home /root -name "authorized_keys" 2>/dev/null)
     while IFS=read -r auth_file;do
-        [[-z "$auth_file"]] && continue
-        [[! -f "$auth_file"]] && continue
+        [[ -z "$auth_file" ]] && continue
+        [[ ! -f "$auth_file" ]] && continue
         local line_num=0
         while IFS=read -r key_line;do
             ((line_num++))
             #ignores les commentaire et les lignes vides
-            [[-z "$key_line" || "$key_line" =~ ^# ]] && continue
+            [[ -z "$key_line" || "$key_line" =~ ^# ]] && continue
             if echo "$key_line" | grep -qE "Command=|no-pty|permitopen";then
                 log_message "HIGH" "Cle SSH avec iptions suspectes: $auth_file:$line_num"
                 log_message "INFO" " ->$(echo "$key_line" | cut -c1-100)..."
@@ -82,8 +82,8 @@ detect_unknown_ssh_keys(){
             #verification des dates de modifications du fichier
             local mod_date=$(stat -c %Y "$auth_file" 2>/dev/null)
             local now=$(date +%s)
-            local afe_days=$(((now - mod_date) / 86400 ))
-            if [[$age_days -lt 7]];then
+            local age_days=$(((now - mod_date) / 86400 ))
+            if [[ $age_days -lt 7 ]];then
                 log_message "MEDIUM" "Fichier authorized_keys modifie recemment: $auth_file"
                 log_message "INFO" " ->Modifie il y a $age_days jour(s)"
             fi
@@ -91,7 +91,7 @@ detect_unknown_ssh_keys(){
     done <<< "$auth_keys_files"
     #verifier les cles ssh dans des emplacements inhabituels
     local unusual_keys=$(find /tmp /var/tmp /dev/shm -name "*.pub" -o -name "id_rsa*" 2>/dev/null)
-    if [[ -n "$unusual_keys"]];then
+    if [[ -n "$unusual_keys" ]];then
         log_message "HIGH" "Cles SSH dans des emplacement suspects: "
         while IFS=read -r key;do
             log_message "INFO" " ->$key"
@@ -133,7 +133,7 @@ detect_attack_tools(){
     )
     for tool in "${attack_tools[@]}";do
         local found=$(find / -name "*${tool}*" -type f 2>/dev/null | grep -v ".git" | head -3)
-        if [[-n "$found"]];then
+        if [[ -n "$found" ]];then
             log_message "CRITICAL" "Outil d'attaque potentiel trouve: $tool"
             while IFS= read -r file;do
                 log_message "INFO" " ->$file"
@@ -146,10 +146,10 @@ detect_temp_binaires(){
     log_message "INFO" "Recherche de binaore dans les repertoires temporaires..."
     local temp_dirs=("/tmp" "/var/tmp" "/dev/shm" "/run/shm")
     for dir in "${temp_dirs[@]}";do
-        [[! -d "$dir"]] && continue
+        [[ ! -d "$dir" ]] && continue
         #trouver des fichiers executables
         local executables=$(find "$dir" -type f -executable 2>/dev/null)
-        if [[ -n "$executables"]];then
+        if [[ -n "$executables" ]];then
             log_message "MEDIUM" "Fichiers executanles dans $dir :"
             while IFS=read -r exe;do
                 local file_type=$(file -b "$exe" 2>/dev/null | cut -c1-50)
@@ -158,7 +158,7 @@ detect_temp_binaires(){
         fi
         #trouver les fichiers caches
         local hidden=$(find "$dir" -name ".*" -type f 2>/dev/null | head -10)
-        if [[-n "$hidden"]];then
+        if [[ -n "$hidden" ]];then
             log_message "MEDIUM" "Fichiers caches dans $dir :"
             while IFS=read -r h;do
                 log_message "INFO" " -> $h"
@@ -176,7 +176,7 @@ detect_profile_modifications(){
     )
     #ajouter les fichiers utilisateur
     for home in /home/* /root;do
-        [[ -d "$home"]] || continue
+        [[ -d "$home" ]] || continue
         profile_files+=(
             "$home/.bashrc"
             "$home/.bash_profile"
@@ -199,7 +199,7 @@ detect_profile_modifications(){
         "reverse"
     )
     for file in "${profile_files[@]}";do
-        [[ ! -f "$file"]] && continue
+        [[ ! -f "$file" ]] && continue
         for pattern in "${suspicious_patterns[@]}";do
             if grep -q "$pattern" "$file" 2>/dev/null;then
                 log_message "HIGH" "Pattern suspect dans $file : $pattern"
@@ -209,8 +209,8 @@ detect_profile_modifications(){
         #verifier les modifications recentes
         local mod_date=$(stat -c %Y "$file" 2>/dev/null)
         local now=$(date +%s)
-        local age_days=$(((now - mode_date) / 86400 ))
-        if [[$age_days -lt 7 ]];then
+        local age_days=$(((now - mod_date) / 86400 ))
+        if [[ $age_days -lt 7 ]];then
             log_message "LOW" "Fichier de profile modifie recemment: $file ($age_days jours)"
         fi
     done
@@ -231,16 +231,16 @@ detect_suspicious_processes(){
         "xmrig"
         "minerd"
     )
-    local ps_output=$(ps aux 2/dev/null)
+    local ps_output=$(ps aux 2>/dev/null)
     for pattern in "${suspicious_names[@]}";do
-        local foumd=$(echo "$ps_output" | grep -E "$pattern" | grep -v grep)
-        if[[-n "$found"]];then
+        local found=$(echo "$ps_output" | grep -E "$pattern" | grep -v grep)
+        if [[ -n "$found" ]];then
             log_message "HIGH" "Processus suspect detecte; pattern: $pattern :"
             log_message "INFO" " $found"
         fi
     done
     local notty=$(ps aux 2>/dev/null | awk '$7 == "?" && $11 !~ /^\[/' | head -20)
-    if [[-n "$notty"]];then
+    if [[ -n "$notty" ]];then
         log_message "INFO" "Processus sans TTY, verifier manuellement si suspects: $(echo "$notty" | wc -l) trouves"
     fi
 }
@@ -260,7 +260,7 @@ detect_suspicious_aliases(){
     )
     for pattern in "${dangerous_aliases[@]}";do
         if echo "$alias_output" | grep -q "^alias $pattern";then
-            local alise_def=$(echo "$alise_output" | grep "^alias $pattern")
+            local alias_def=$(echo "$alias_output" | grep "^alias $pattern")
             log_message "MEDIUM" "Alias potentiellement dangereux: $alias_def"
         fi
     done

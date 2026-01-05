@@ -4,19 +4,19 @@
 analyze_path(){
     local path_value="$1"
     local path_source="$2"
-    #separation du PATH en element
-    IFS=':' read -ra path_element <<< "$path_value"
+    #separation du PATH en elements
+    IFS=':' read -ra path_elements <<< "$path_value"
 
     local issues_found=0
-    for element in "${path_element[@]}";do
+    for element in "${path_elements[@]}";do
         #verifier si l'element est vide
-        if [[-z "$element" || "$element" == "."]];then
+        if [[ -z "$element" || "$element" == "." ]];then
             log_message "CRITICAL" "PATH contient ke repertoire courant (.) - $path_soure"
             log_message "INFO" " ->Permet l'execution de binaire dans le dossier courant"
             ((issues_found++))
         fi
         #verifier si le repertoire existe
-        if [[! -d "$element" ]];then
+        if [[ ! -d "$element" ]];then
             log_message "MEDIUM" "PATH contient un repertoire inexistant : $element"
             log_message "INFO" " ->Un attaquant pourrait creer ce repertoire"
             ((issues_found++))
@@ -24,9 +24,9 @@ analyze_path(){
         fi
         #verifier les permissions d'ecriture
         if [[ -w "$element" ]];then
-            if [["$element" == "$HOME"]];then
+            if [[ "$element" == "$HOME" ]];then
                 :
-            elif [["$element" == "/tmp"* || "$element" == "/var/tmp"* ]];then
+            elif [[ "$element" == "/tmp"* || "$element" == "/var/tmp"* ]];then
                 log_message "HIGH" "PATH contient un repertoire temporaire : $element"
                 log_message "INFO" " -> Tout utilisateur peut placer des executables"
                 ((issues_found++))
@@ -37,15 +37,15 @@ analyze_path(){
         fi
 
         #verifier si le repertoire apprtient a un autre utilisateur que root
-        local owner=$(stat -c '%u' "$element" 2>/dev/null)
-        if [["$owner" !="root" && "$element" != "$HOME"*]];then
+        local owner=$(stat -c '%U' "$element" 2>/dev/null)
+        if [[ "$owner" != "root" && "$element" != "$HOME"* ]];then
             log_message "LOW" "Repertoire PATH non-root : $element (proprietaire:$owner)"
             ((issues_found++))
         fi
 
         #verifier les permissions du repertoire; world-writable
         local perms=$(stat -c '%a' "$element" 2>/dev/null)
-        if [["${perms: -1}" =~ [2367] ]];then
+        if [[ "${perms: -1}" =~ [2367] ]];then
             log_message "HIGH" "Repertoire PATH world-writable : $element ($perms)"
             ((issues_found++))
         fi
@@ -74,13 +74,13 @@ check_profile_files(){
         #expansion des wildcards
         for file in $pattern;do
             [[ ! -f "$file" ]] && continue
-            [[ ! -r "$file "]] && continue
+            [[ ! -r "$file" ]] && continue
 
             #chercher des modifications de PATH
             local path_mods=$(grep -n "PATH=" "$file" 2>/dev/null | grep -v "^#")
             if [[ -n "$path_mods" ]];then
                 while IFS= read -r line; do
-                    local line_num$(echo "$line" | cut -d: -f1)
+                    local line_num=$(echo "$line" | cut -d: -f1)
                     local content=$(echo "$line" | cut -d: -f2)
 
                     #extraire la valeur du PATH

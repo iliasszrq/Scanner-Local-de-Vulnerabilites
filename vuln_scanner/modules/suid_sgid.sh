@@ -66,7 +66,7 @@ DANGEROUS_SUID=(
 is_legitmate(){
     local file="$1"
     for legit in "${LEGITMATE_SUID[@]}";do
-        if [["$file" == "$legit"]]; then
+        if [[ "$file" == "$legit" ]]; then
             return 0
         fi
     done
@@ -76,9 +76,9 @@ is_legitmate(){
 #fct pour verifier si un binaire est dangereux
 is_dangerous(){
     local file="$1"
-    local basname= $(basname "$file")
+    local basename=$(basename "$file")
     for dangerous in "${DANGEROUS_SUID[@]}";do
-        if [["$basname" == "$dangerous"]];then
+        if [[ "$basename" == "$dangerous" ]];then
             return 0
         fi
     done
@@ -97,7 +97,7 @@ scan_suid_sgid(){
 
     #analyser chaque fichier
     while IFS= read -r file;do
-        if [[-z "$file"]];then
+        if [[ -z "$file" ]];then
             continue
         fi
 
@@ -114,6 +114,14 @@ scan_suid_sgid(){
             ((unknown_count++))
         fi
     done <<< "$suid_files"
+    log_message "INFO" "RECHERCHE DES FICHIERS SGID..."
+    local sgid_files=$(find / -perm -2000 -type f 2>/dev/null)
+    local sgid_count=0
+    
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        ((sgid_count++))
+    done <<< "$sgid_files"
 
     echo " "
     log_message "INFO" "Resume SUID/SGID: "

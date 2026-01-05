@@ -69,7 +69,7 @@ SUDO_DANGEROUS_BINS=(
 check_sudoers_main(){
     local sudoers_file="/etc/sudoers"
 
-    if [[! -r "$sudoers_file"]];then
+    if [[ ! -r "$sudoers_file" ]];then
         log_message "INFO" "Impossible de lire $sudoers_file, droits insufisants"
         log_message "INFO" "Relancer le script avec sudo pour un scan complet"
         return 1
@@ -77,7 +77,7 @@ check_sudoers_main(){
     log_message "INFO" "Analyse de $sudoers_file..."
     while IFS= read -r line;do
         #ignorer les lines vides et les commentaires
-        [[-z "$line" || "$line" =~ ^[[:space:]]*#]] && continue
+        [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
 
         #Detecter NOPASSWD
         if echo "$line" | grep -qi "NOPASSWD";then
@@ -110,28 +110,28 @@ check_sudoers_main(){
 #Fonction pour analyser les fichiers dans /etc/sudoers.d/
 check_sudoers_d(){
     local sudoers_dir="/etc/sudoers.d"
-    if[[ ! -d "$sudoers_dir" ]];then
+    if [[ ! -d "$sudoers_dir" ]];then
         log_message "INFO" "Repertoire $sudoers_dir introuvable."
         return 0
     fi
-    if [[! -r "$sudoers_dir" ]];then
+    if [[ ! -r "$sudoers_dir" ]];then
         log_message "INFO" "Impossible de lire $sudoers_dir, droit insuffisants"
         return 1
     fi
     log_message "INFO" "Analyse des fichiers dans $sudoers_dir..."
     for file in "$sudoers_dir"/*;do
-        [[! -f "$file"]] && continue
-        [[! -r "$file"]] && continue
+        [[ ! -f "$file" ]] && continue
+        [[ ! -r "$file" ]] && continue
 
         #verification des permissions des fichiers
         local perms=$(stat -c '%a' "$file" 2>/dev/null)
-        if [["$perms" != "440" && "$perms" != "400"]];then
+        if [[ "$perms" != "440" && "$perms" != "400" ]];then
             log_message "MEDIUM" "Permissions incorrectes sur $file : $perms"
         fi
 
         while IFS=read -r line;do
-            [[-z "$line" || "$line" =~ ^[[:space:]]*#]] && continue
-            if echo "$line" || grep -qi "NOPASSWD";then
+            [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]] && continue
+            if echo "$line" | grep -qi "NOPASSWD";then
                 log_message "HIGH" "NOPASSWD dans $file : $line"
             fi
             for dangerous_bin in "${SUDO_DANGEROUS_BINS[@]}";do
@@ -147,7 +147,7 @@ check_current_user_sudo(){
     log_message "INFO" "Verification des droits sudo de l'utilisateur courant..."
     local sudo_rights=$(sudo -l 2>/dev/null)
 
-    if [[ -z "$sudo_rights"]];then
+    if [[ -z "$sudo_rights" ]];then
         log_message "INFO" "Impossible de determiner les droits sudo"
         return 0
     fi
@@ -158,7 +158,7 @@ check_current_user_sudo(){
         if echo "$line" | grep -qi "(ALL.*ALL)";then
             log_message "HIGH" "User actuel a des droits etendus : $line"
         fi
-        for dangerous_bin in "${SUDO_DANGEROUS_BIN[@]}";do
+        for dangerous_bin in "${SUDO_DANGEROUS_BINS[@]}";do
             if echo "$line" | grep -qi "bin/$dangerous_bin";then
                 log_message "MEDIUM" "User peut executer $dangerous_bin avec sudo"
             fi
