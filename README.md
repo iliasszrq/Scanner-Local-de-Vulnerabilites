@@ -4,7 +4,8 @@
 [![License](https://img.shields.io/badge/License-Educational-blue.svg)]()
 [![Platform](https://img.shields.io/badge/Platform-Linux-orange.svg)]()
 
-> **Projet de Fin de Module - Cybersécurité Shell Scripting**  
+> **Projet de Fin de Module - Scanner Local de Vulnérabilités avec Corrélation (Blue Team
+Avancé)**  
 > Scanner automatisé de vulnérabilités locales pour systèmes Linux
 
 ---
