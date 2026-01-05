@@ -388,30 +388,9 @@ sudo ./vuln_scanner.sh -q
 
 ---
 
-## 📚 Références
-
-- [GTFOBins](https://gtfobins.github.io/) - Binaires Unix exploitables
-- [MITRE ATT&CK](https://attack.mitre.org/) - Framework d'attaques
-- [CVE Database](https://cve.mitre.org/) - Base de vulnérabilités
-- [CIS Benchmarks](https://www.cisecurity.org/) - Guides de durcissement
-
----
-
 ## 👨‍💻 Auteur
 
 **Iliass Zarquan**  
-Étudiant en Cybersécurité  
-Projet de Fin de Module - Shell Scripting
+Projet de Fin de Module
 
 ---
-
-## 📄 Licence
-
-Ce projet est développé à des fins **éducatives uniquement**.  
-Utilisation responsable requise.
-
----
-
-<p align="center">
-  <i>Développé avec ❤️ pour la cybersécurité</i>
-</p>
