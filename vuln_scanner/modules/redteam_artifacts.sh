@@ -2,8 +2,8 @@
 detect_reverse_shells(){
     log_message "INFO" "Recherche de reverse shells potentiels..."
 
-    #patterns de reverse shell dans les fichiers
-    local shell_patterns=(
+    # Patterns FIXES (pas de regex)
+    local fixed_patterns=(
         "bash -i"
         "bash%20-i"
         "/dev/tcp/"
@@ -12,6 +12,14 @@ detect_reverse_shells(){
         "nc.traditional -e"
         "ncat -e"
         "mkfifo"
+        "socat"
+        "0<&196"
+        "exec 196<>"
+        "xterm -display"
+    )
+    
+    # Patterns REGEX
+    local regex_patterns=(
         "mknod.*p"
         "python.*socket"
         "python.*pty.spawn"
@@ -20,11 +28,8 @@ detect_reverse_shells(){
         "php.*fsockopen"
         "php.*exec"
         "socat.*exec"
-        "0<&196"
-        "exec 196<>"
-        "xterm -display"
     )
-    #chercher dans les fichiers de configuration et scripts
+
     local search_paths=(
         "/tmp"
         "/var/tmp"
@@ -34,30 +39,45 @@ detect_reverse_shells(){
         "/etc/cron.d"
         "/var/spool/cron"
     )
-    for path in "${search_paths[@]}";do
+
+    for path in "${search_paths[@]}"; do
         [[ ! -d "$path" ]] && continue
-        for pattern in "${shell_patterns[@]}";do
-            local found=$(grep -rl "$pattern" "$path" 2>/dev/null | head -5)
-            if [[ -n "$found" ]];then
-                while IFS=read -r file;do
-                    log_message "CRITICAL" "Pettern de reverse shell trouve: $pattern"
+        
+        # Recherche avec patterns fixes
+        for pattern in "${fixed_patterns[@]}"; do
+            local found=$(grep -rlF "$pattern" "$path" 2>/dev/null | head -5)
+            if [[ -n "$found" ]]; then
+                while IFS= read -r file; do
+                    log_message "CRITICAL" "Pattern de reverse shell trouve: $pattern"
+                    log_message "INFO" " ->Fichier : $file"
+                done <<< "$found"
+            fi
+        done
+        
+        # Recherche avec patterns regex
+        for pattern in "${regex_patterns[@]}"; do
+            local found=$(grep -rlE "$pattern" "$path" 2>/dev/null | head -5)
+            if [[ -n "$found" ]]; then
+                while IFS= read -r file; do
+                    log_message "CRITICAL" "Pattern de reverse shell trouve: $pattern"
                     log_message "INFO" " ->Fichier : $file"
                 done <<< "$found"
             fi
         done
     done
 
-    #verifier les connexions reseau suspectes
-    if command -v netstat &>/dev/null;then
+    # Vérifier les connexions réseau suspectes
+    if command -v netstat &>/dev/null; then
         local suspicious_conn=$(netstat -an 2>/dev/null | grep -E "ESTABLISHED.*:(4444|5555|1234|31337|6666|9001|9002)")
-        if [[ -n "$suspicious_conn" ]];then
-            log_message "HIGH" "Connexions sur ports suspects : "
+        if [[ -n "$suspicious_conn" ]]; then
+            log_message "HIGH" "Connexions sur ports suspects :"
             log_message "INFO" "$suspicious_conn"
         fi
     fi
-    if command -v ss &>/dev/null;then
+    
+    if command -v ss &>/dev/null; then
         local suspicious_conn=$(ss -an 2>/dev/null | grep -E "ESTAB.*:(4444|5555|1234|31337|6666|9001|9002)")
-        if [[ -n "$suspicious_conn" ]];then
+        if [[ -n "$suspicious_conn" ]]; then
             log_message "HIGH" "Connexions sur ports suspects :"
             log_message "INFO" "$suspicious_conn"
         fi
